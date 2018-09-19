@@ -7,14 +7,14 @@
 //
 
 import UIKit
+import SlideMenuControllerSwift
 
 class ViewController: UIViewController {
 
+    var slideMenuController: SlideMenuController?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
     }
-
-
 }
 

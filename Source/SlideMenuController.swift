@@ -29,7 +29,7 @@ public struct SlideMenuOptions {
     public static var shadowOffset: CGSize = CGSize(width: 0,height: 0)
     public static var panFromBezel: Bool = true
     public static var animationDuration: CGFloat = 0.4
-    public static var animationOptions: UIViewAnimationOptions = []
+    public static var animationOptions: UIView.AnimationOptions = []
     public static var rightViewWidth: CGFloat = 270.0
     public static var rightBezelWidth: CGFloat? = 16.0
     public static var rightPanFromBezel: Bool = true
@@ -128,7 +128,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         opacityframe.size.height = opacityframe.size.height - opacityOffset
         opacityView = UIView(frame: opacityframe)
         opacityView.backgroundColor = SlideMenuOptions.opacityViewBackgroundColor
-        opacityView.autoresizingMask = [UIViewAutoresizing.flexibleHeight, UIViewAutoresizing.flexibleWidth]
+        opacityView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
         opacityView.layer.opacity = 0.0
         view.insertSubview(opacityView, at: 1)
       
@@ -141,7 +141,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         leftFrame.size.height = leftFrame.size.height - leftOffset
         leftContainerView = UIView(frame: leftFrame)
         leftContainerView.backgroundColor = UIColor.clear
-        leftContainerView.autoresizingMask = UIViewAutoresizing.flexibleHeight
+        leftContainerView.autoresizingMask = .flexibleHeight
         view.insertSubview(leftContainerView, at: 2)
         addLeftGestures()
       }
@@ -155,7 +155,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         rightFrame.size.height = rightFrame.size.height - rightOffset
         rightContainerView = UIView(frame: rightFrame)
         rightContainerView.backgroundColor = UIColor.clear
-        rightContainerView.autoresizingMask = UIViewAutoresizing.flexibleHeight
+        rightContainerView.autoresizingMask = .flexibleHeight
         view.insertSubview(rightContainerView, at: 3)
         addRightGestures()
       }
@@ -357,7 +357,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         static var startPointOfPan: CGPoint = CGPoint.zero
         static var wasOpenAtStartOfPan: Bool = false
         static var wasHiddenAtStartOfPan: Bool = false
-        static var lastState : UIGestureRecognizerState = .ended
+        static var lastState : UIGestureRecognizer.State = .ended
     }
     
     @objc func handleLeftPanGesture(_ panGesture: UIPanGestureRecognizer) {
@@ -371,62 +371,62 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         }
         
         switch panGesture.state {
-            case UIGestureRecognizerState.began:
-                if LeftPanState.lastState != .ended &&  LeftPanState.lastState != .cancelled &&  LeftPanState.lastState != .failed {
-                    return
-                }
+        case .began:
+            if LeftPanState.lastState != .ended &&  LeftPanState.lastState != .cancelled &&  LeftPanState.lastState != .failed {
+                return
+            }
                 
-                if isLeftHidden() {
-                    self.delegate?.leftWillOpen?()
-                } else {
-                    self.delegate?.leftWillClose?()
-                }
+            if isLeftHidden() {
+                self.delegate?.leftWillOpen?()
+            } else {
+                self.delegate?.leftWillClose?()
+            }
                 
-                LeftPanState.frameAtStartOfPan = leftContainerView.frame
-                LeftPanState.startPointOfPan = panGesture.location(in: view)
-                LeftPanState.wasOpenAtStartOfPan = isLeftOpen()
-                LeftPanState.wasHiddenAtStartOfPan = isLeftHidden()
+            LeftPanState.frameAtStartOfPan = leftContainerView.frame
+            LeftPanState.startPointOfPan = panGesture.location(in: view)
+            LeftPanState.wasOpenAtStartOfPan = isLeftOpen()
+            LeftPanState.wasHiddenAtStartOfPan = isLeftHidden()
                 
-                leftViewController?.beginAppearanceTransition(LeftPanState.wasHiddenAtStartOfPan, animated: true)
+            leftViewController?.beginAppearanceTransition(LeftPanState.wasHiddenAtStartOfPan, animated: true)
                 addShadowToView(leftContainerView)
                 setOpenWindowLevel()
-            case UIGestureRecognizerState.changed:
-                if LeftPanState.lastState != .began && LeftPanState.lastState != .changed {
-                    return
+        case .changed:
+            if LeftPanState.lastState != .began && LeftPanState.lastState != .changed {
+                return
+            }
+                
+            let translation: CGPoint = panGesture.translation(in: panGesture.view!)
+            leftContainerView.frame = applyLeftTranslation(translation, toFrame: LeftPanState.frameAtStartOfPan)
+            applyLeftOpacity()
+            applyLeftContentViewScale()
+        case .ended, .cancelled:
+            if LeftPanState.lastState != .changed {
+                setCloseWindowLevel()
+                return
+            }
+                
+            let velocity:CGPoint = panGesture.velocity(in: panGesture.view)
+            let panInfo: PanInfo = panLeftResultInfoForVelocity(velocity)
+                
+            if panInfo.action == .open {
+                if !LeftPanState.wasHiddenAtStartOfPan {
+                    leftViewController?.beginAppearanceTransition(true, animated: true)
                 }
-                
-                let translation: CGPoint = panGesture.translation(in: panGesture.view!)
-                leftContainerView.frame = applyLeftTranslation(translation, toFrame: LeftPanState.frameAtStartOfPan)
-                applyLeftOpacity()
-                applyLeftContentViewScale()
-            case UIGestureRecognizerState.ended, UIGestureRecognizerState.cancelled:
-                if LeftPanState.lastState != .changed {
-                    setCloseWindowLevel()
-                    return
+                openLeftWithVelocity(panInfo.velocity)
+                    
+                track(.leftFlickOpen)
+            } else {
+                if LeftPanState.wasHiddenAtStartOfPan {
+                    leftViewController?.beginAppearanceTransition(false, animated: true)
                 }
-                
-                let velocity:CGPoint = panGesture.velocity(in: panGesture.view)
-                let panInfo: PanInfo = panLeftResultInfoForVelocity(velocity)
-                
-                if panInfo.action == .open {
-                    if !LeftPanState.wasHiddenAtStartOfPan {
-                        leftViewController?.beginAppearanceTransition(true, animated: true)
-                    }
-                    openLeftWithVelocity(panInfo.velocity)
+                closeLeftWithVelocity(panInfo.velocity)
+                setCloseWindowLevel()
                     
-                    track(.leftFlickOpen)
-                } else {
-                    if LeftPanState.wasHiddenAtStartOfPan {
-                        leftViewController?.beginAppearanceTransition(false, animated: true)
-                    }
-                    closeLeftWithVelocity(panInfo.velocity)
-                    setCloseWindowLevel()
-                    
-                    track(.leftFlickClose)
+                track(.leftFlickClose)
 
-                }
-            case UIGestureRecognizerState.failed, UIGestureRecognizerState.possible:
-                break
+            }
+        case .failed, .possible:
+            break
         }
         
         LeftPanState.lastState = panGesture.state
@@ -437,7 +437,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         static var startPointOfPan: CGPoint = CGPoint.zero
         static var wasOpenAtStartOfPan: Bool = false
         static var wasHiddenAtStartOfPan: Bool = false
-        static var lastState : UIGestureRecognizerState = .ended
+        static var lastState : UIGestureRecognizer.State = .ended
     }
     
     @objc func handleRightPanGesture(_ panGesture: UIPanGestureRecognizer) {
@@ -451,7 +451,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         }
         
         switch panGesture.state {
-        case UIGestureRecognizerState.began:
+        case .began:
             if RightPanState.lastState != .ended &&  RightPanState.lastState != .cancelled &&  RightPanState.lastState != .failed {
                 return
             }
@@ -471,7 +471,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
             
             addShadowToView(rightContainerView)
             setOpenWindowLevel()
-        case UIGestureRecognizerState.changed:
+        case .changed:
             if RightPanState.lastState != .began && RightPanState.lastState != .changed {
                 return
             }
@@ -481,7 +481,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
             applyRightOpacity()
             applyRightContentViewScale()
             
-        case UIGestureRecognizerState.ended, UIGestureRecognizerState.cancelled:
+        case .ended, .cancelled:
             if RightPanState.lastState != .changed {
                 setCloseWindowLevel()
                 return
@@ -506,7 +506,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
                 
                 track(.rightFlickClose)
             }
-        case UIGestureRecognizerState.failed, UIGestureRecognizerState.possible:
+        case .failed, .possible:
             break
         }
         
@@ -901,7 +901,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         if SlideMenuOptions.hideStatusBar {
             DispatchQueue.main.async(execute: {
                 if let window = UIApplication.shared.keyWindow {
-                    window.windowLevel = UIWindowLevelStatusBar + 1
+                    window.windowLevel = UIWindow.Level.statusBar + 1
                 }
             })
         }
@@ -911,7 +911,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         if SlideMenuOptions.hideStatusBar {
             DispatchQueue.main.async(execute: {
                 if let window = UIApplication.shared.keyWindow {
-                    window.windowLevel = UIWindowLevelNormal
+                    window.windowLevel = UIWindow.Level.normal
                 }
             })
         }
@@ -921,10 +921,10 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
         if let viewController = targetViewController {
             viewController.view.frame = targetView.bounds
             
-            if (!childViewControllers.contains(viewController)) {
-                addChildViewController(viewController)
+            if (!children.contains(viewController)) {
+                addChild(viewController)
                 targetView.addSubview(viewController.view)
-                viewController.didMove(toParentViewController: self)
+                viewController.didMove(toParent: self)
             }
         }
     }
@@ -933,9 +933,9 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
     fileprivate func removeViewController(_ viewController: UIViewController?) {
         if let _viewController = viewController {
             _viewController.view.layer.removeAllAnimations()
-            _viewController.willMove(toParentViewController: nil)
+            _viewController.willMove(toParent: nil)
             _viewController.view.removeFromSuperview()
-            _viewController.removeFromParentViewController()
+            _viewController.removeFromParent()
         }
     }
     
@@ -1060,12 +1060,12 @@ extension UIViewController {
     }
     
     public func addLeftBarButtonWithImage(_ buttonImage: UIImage) {
-        let leftButton: UIBarButtonItem = UIBarButtonItem(image: buttonImage, style: UIBarButtonItemStyle.plain, target: self, action: #selector(self.toggleLeft))
+        let leftButton: UIBarButtonItem = UIBarButtonItem(image: buttonImage, style: .plain, target: self, action: #selector(self.toggleLeft))
         navigationItem.leftBarButtonItem = leftButton
     }
     
     public func addRightBarButtonWithImage(_ buttonImage: UIImage) {
-        let rightButton: UIBarButtonItem = UIBarButtonItem(image: buttonImage, style: UIBarButtonItemStyle.plain, target: self, action: #selector(self.toggleRight))
+        let rightButton: UIBarButtonItem = UIBarButtonItem(image: buttonImage, style: .plain, target: self, action: #selector(self.toggleRight))
         navigationItem.rightBarButtonItem = rightButton
     }
     
