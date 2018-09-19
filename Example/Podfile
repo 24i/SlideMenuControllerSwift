@@ -1,0 +1,16 @@
+platform :ios, '10.0'
+
+target 'Example' do
+  use_frameworks!
+
+  pod 'SlideMenuControllerSwift', :path => ".."
+
+  target 'ExampleTests' do
+    inherit! :search_paths
+  end
+
+  target 'ExampleUITests' do
+    inherit! :search_paths
+  end
+
+end
