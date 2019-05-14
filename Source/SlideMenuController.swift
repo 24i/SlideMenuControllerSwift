@@ -509,7 +509,7 @@ open class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
                 track(.rightFlickClose)
             }
         case .failed, .possible:
-            break
+            ()
         @unknown default:
             ()
         }
