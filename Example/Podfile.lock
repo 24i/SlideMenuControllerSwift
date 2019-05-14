@@ -1,5 +1,5 @@
 PODS:
-  - SlideMenuControllerSwift (4.0.2)
+  - SlideMenuControllerSwift (4.1.0)
 
 DEPENDENCIES:
   - SlideMenuControllerSwift (from `..`)
@@ -9,8 +9,8 @@ EXTERNAL SOURCES:
     :path: ".."
 
 SPEC CHECKSUMS:
-  SlideMenuControllerSwift: 108577b09a0d9f1dfd9cdd30d631c1f2dc85d6cd
+  SlideMenuControllerSwift: 9b9930ef6d348cce8bf5f6b858d59bdbdfd24068
 
 PODFILE CHECKSUM: abfcee09787028f74d5e94d7b697834b33a95723
 
-COCOAPODS: 1.6.0.beta.1
+COCOAPODS: 1.7.0.rc.1
